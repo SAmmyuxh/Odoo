@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 
 const swapSchema = new mongoose.Schema({
@@ -92,6 +91,22 @@ const swapSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  // ADD THESE ADMIN FIELDS
+  adminCancelled: {
+    type: Boolean,
+    default: false
+  },
+  adminCancelReason: {
+    type: String,
+    trim: true
+  },
+  adminCancelledBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  adminCancelledAt: {
+    type: Date
   }
 }, {
   timestamps: true
@@ -121,8 +136,8 @@ swapSchema.statics.getStats = async function() {
 
 // Method to check if user can rate this swap
 swapSchema.methods.canRate = function(userId) {
-  return this.status === 'completed' && 
-         (this.requester.toString() === userId.toString() || 
+  return this.status === 'completed' &&
+         (this.requester.toString() === userId.toString() ||
           this.provider.toString() === userId.toString());
 };
 

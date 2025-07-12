@@ -1,17 +1,43 @@
-
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { auth } from '../middleware/auth.js';
+import { z } from 'zod';
+
+// Zod Schemas
+const registerSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  location: z.string().optional()
+});
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email'),
+  password: z.string().min(1, 'Password is required')
+});
+
+// Validation middleware
+const validate = (schema) => (req, res, next) => {
+  try {
+    req.body = schema.parse(req.body); // Parsed values replace req.body
+    next();
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation error',
+      errors: err.errors
+    });
+  }
+};
 
 const router = express.Router();
 
 // Register
-router.post('/register', async (req, res) => {
+router.post('/register', validate(registerSchema), async (req, res) => {
   try {
     const { name, email, password, location } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
@@ -20,17 +46,9 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Create new user
-    const user = new User({
-      name,
-      email,
-      password,
-      location
-    });
-
+    const user = new User({ name, email, password, location });
     await user.save();
 
-    // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -59,11 +77,10 @@ router.post('/register', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', validate(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
@@ -72,7 +89,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if user is banned
     if (user.isBanned) {
       return res.status(403).json({
         success: false,
@@ -80,7 +96,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({
@@ -89,11 +104,9 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Update last active
     user.lastActive = new Date();
     await user.save();
 
-    // Generate JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
@@ -176,7 +189,7 @@ router.post('/refresh', auth, async (req, res) => {
   }
 });
 
-// Logout (client-side token removal)
+// Logout
 router.post('/logout', auth, async (req, res) => {
   try {
     res.json({

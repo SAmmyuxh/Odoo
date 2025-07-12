@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -42,6 +41,26 @@ const userSchema = new mongoose.Schema({
       type: String,
       enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
       default: 'Intermediate'
+    },
+    // ADD THESE ADMIN FIELDS
+    isApproved: {
+      type: Boolean,
+      default: false
+    },
+    isRejected: {
+      type: Boolean,
+      default: false
+    },
+    rejectionReason: {
+      type: String,
+      trim: true
+    },
+    reviewedAt: {
+      type: Date
+    },
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     }
   }],
   skillsWanted: [{
@@ -98,6 +117,21 @@ const userSchema = new mongoose.Schema({
   isBanned: {
     type: Boolean,
     default: false
+  },
+  // ADD THESE ADMIN FIELDS
+  banReason: {
+    type: String,
+    trim: true
+  },
+  banExpiry: {
+    type: Date
+  },
+  bannedAt: {
+    type: Date
+  },
+  bannedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   },
   rating: {
     average: {
@@ -158,9 +192,27 @@ userSchema.methods.getPublicProfile = function() {
   return userObject;
 };
 
+// ADD THIS METHOD for checking if user is banned
+userSchema.methods.isBannedCheck = function() {
+  if (!this.isBanned) return false;
+  
+  // Check if ban has expired
+  if (this.banExpiry && new Date() > this.banExpiry) {
+    this.isBanned = false;
+    this.banReason = null;
+    this.banExpiry = null;
+    this.bannedAt = null;
+    this.bannedBy = null;
+    this.save();
+    return false;
+  }
+  
+  return true;
+};
+
 // Index for search functionality
 userSchema.index({ 
-  name: 'text', 
+  name: 'text',
   'skillsOffered.skill': 'text',
   'skillsWanted.skill': 'text',
   location: 'text'

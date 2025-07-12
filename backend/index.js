@@ -10,7 +10,7 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import swapRoutes from './routes/swaps.js';
 import adminRoutes from './routes/admin.js';
-import connectDB from './DB/db.js';
+import { connectDB } from "./DB/db.js";
 
 dotenv.config();
 
@@ -18,7 +18,7 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
+const app = e();
 
 const PORT = process.env.PORT || 5000;
 
@@ -31,7 +31,7 @@ app.use(morgan('combined'));
 connectDB();
 
 // Static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', e.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
