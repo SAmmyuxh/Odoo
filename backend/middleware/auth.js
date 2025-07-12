@@ -23,7 +23,7 @@ export const auth = async (req, res, next) => {
         message: 'User not found'
       });
     }
-
+    
     if (user.isBanned) {
       return res.status(403).json({
         success: false,
